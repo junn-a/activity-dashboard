@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Tracker Pro: Bar Analytics</title>
+    <title>Activity Tracker Pro: Duration & Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -25,29 +25,28 @@
                 <h1 class="text-2xl font-black text-slate-900" id="user-title">Activity Log</h1>
                 <div id="comparison-badge" class="mt-1"></div>
             </div>
-            <button onclick="openUserModal()" class="text-xs font-bold bg-white border px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition">Ganti User</button>
+            <button onclick="openUserModal()" class="text-xs font-bold bg-white border px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50">Ganti User</button>
         </header>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="md:col-span-2">
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Aktivitas</label>
-                    <input type="text" id="quick-input" placeholder="Contoh: Baca Al-Quran" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <input type="text" id="quick-input" placeholder="Apa yang kamu lakukan?" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Durasi (Menit)</label>
                     <input type="number" id="duration-input" placeholder="0" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
                 <div class="flex items-end">
-                    <button onclick="submitLog()" class="w-full bg-blue-600 text-white p-2.5 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">Simpan</button>
+                    <button onclick="submitLog()" class="w-full bg-slate-900 text-white p-2.5 rounded-xl font-bold hover:bg-black transition shadow-lg">Simpan</button>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div class="lg:col-span-2 space-y-8">
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest text-center">Kontribusi Aktivitas 2026</h3>
                     <div id="month-header" class="month-labels font-medium text-slate-400"></div>
                     <div class="flex gap-2">
                         <div class="grid grid-rows-7 gap-[3px] pt-[1px]">
@@ -56,36 +55,34 @@
                         <div id="calendar-grid" class="grid grid-flow-col grid-rows-7 gap-[3px]"></div>
                     </div>
                 </div>
-
+                
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Statistik Durasi (7 Hari Terakhir)</h3>
-                    <canvas id="activityChart" height="120"></canvas>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase mb-4 tracking-widest">Tren Durasi 7 Hari Terakhir</h3>
+                    <canvas id="activityChart" height="100"></canvas>
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-4 border-b bg-slate-50">
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Riwayat 5 Hari Terakhir</h3>
-                    </div>
-                    <div id="recent-days-list" class="divide-y divide-slate-100"></div>
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-fit">
+                <div class="p-4 border-b bg-slate-50">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">5 Hari Terakhir</h3>
                 </div>
+                <div id="recent-days-list" class="divide-y">
+                    </div>
             </div>
         </div>
     </div>
 
     <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div id="modal-timeline" class="hidden modal-fade bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm border">
-            <h2 id="tl-date" class="text-lg font-black mb-4">Detail Kegiatan</h2>
-            <div id="tl-content" class="space-y-3 mb-6 max-h-80 overflow-y-auto pr-2"></div>
-            <button onclick="closeModals()" class="w-full py-3 bg-slate-100 rounded-2xl font-bold text-slate-600 hover:bg-slate-200 transition">Tutup</button>
+            <h2 id="tl-date" class="text-lg font-black mb-4">Breakdown Hari</h2>
+            <div id="tl-content" class="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2"></div>
+            <button onclick="closeModals()" class="w-full py-3 bg-slate-100 rounded-2xl font-bold text-slate-600">Tutup</button>
         </div>
 
-        <div id="modal-user" class="hidden modal-fade bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center border">
-            <h2 class="text-xl font-black mb-2">Halo!</h2>
-            <p class="text-sm text-slate-500 mb-6">Masukkan nama untuk memulai.</p>
-            <input type="text" id="user-field" placeholder="Nama Anda" class="w-full p-3 border rounded-2xl mb-4 outline-none text-center focus:ring-2 focus:ring-blue-500">
-            <button onclick="confirmUser()" class="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition">Buka Dashboard</button>
+        <div id="modal-user" class="hidden modal-fade bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center">
+            <h2 class="text-xl font-black mb-6">Mulai Log</h2>
+            <input type="text" id="user-field" placeholder="Nama Anda" class="w-full p-3 border rounded-2xl mb-4 outline-none text-center">
+            <button onclick="confirmUser()" class="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold">Masuk</button>
         </div>
     </div>
 
@@ -97,12 +94,12 @@
         window.onload = () => { if(!user) openUserModal(); else setupApp(); };
 
         function setupApp() {
-            document.getElementById('user-title').innerText = `Log ${user}`;
+            document.getElementById('user-title').innerText = `Halo, ${user}!`;
             init();
         }
 
-        function getLogs() { return JSON.parse(localStorage.getItem(`prolog_v3_${user}`)) || {}; }
-        function saveLogs(data) { localStorage.setItem(`prolog_v3_${user}`, JSON.stringify(data)); init(); }
+        function getLogs() { return JSON.parse(localStorage.getItem(`prolog_${user}`)) || {}; }
+        function saveLogs(data) { localStorage.setItem(`prolog_${user}`, JSON.stringify(data)); init(); }
 
         function init() {
             const logs = getLogs();
@@ -135,14 +132,12 @@
         function submitLog() {
             const act = document.getElementById('quick-input').value.trim();
             const dur = parseInt(document.getElementById('duration-input').value);
-            if(!act || isNaN(dur)) return;
+            if(!act || isNaN(dur)) return alert("Isi aktivitas dan durasi!");
             
             const logs = getLogs();
-            const todayStr = new Date().toISOString().split('T')[0];
-            const timeStr = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}).replace('.', ':');
-            
-            if(!logs[todayStr]) logs[todayStr] = [];
-            logs[todayStr].push({ act, dur, time: timeStr });
+            const today = new Date().toISOString().split('T')[0];
+            if(!logs[today]) logs[today] = [];
+            logs[today].push({ act, dur, time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
             
             document.getElementById('quick-input').value = '';
             document.getElementById('duration-input').value = '';
@@ -154,24 +149,12 @@
             list.innerHTML = '';
             const sortedDates = Object.keys(logs).sort((a,b) => b.localeCompare(a)).slice(0, 5);
             
-            if(!sortedDates.length) {
-                list.innerHTML = '<p class="p-6 text-center text-slate-400 text-xs italic">Belum ada data.</p>';
-                return;
-            }
-
             sortedDates.forEach(date => {
                 const totalDur = logs[date].reduce((sum, item) => sum + item.dur, 0);
                 const div = document.createElement('div');
-                div.className = "p-4 hover:bg-slate-50 cursor-pointer transition flex justify-between items-center group";
+                div.className = "p-4 hover:bg-blue-50 cursor-pointer transition flex justify-between items-center";
                 div.onclick = () => showTimeline(date);
-                div.innerHTML = `
-                    <div>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase">${date}</p>
-                        <p class="text-sm font-bold text-slate-700">${logs[date].length} Kegiatan</p>
-                    </div>
-                    <div class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black group-hover:bg-blue-600 group-hover:text-white transition">
-                        ${totalDur}m
-                    </div>`;
+                div.innerHTML = `<div><p class="text-xs font-bold text-slate-400">${date}</p><p class="font-bold">${logs[date].length} Kegiatan</p></div><div class="text-right"><span class="text-blue-600 font-black text-sm">${totalDur}m</span></div>`;
                 list.appendChild(div);
             });
         }
@@ -180,20 +163,12 @@
             const logs = getLogs()[date] || [];
             document.getElementById('tl-date').innerText = date;
             const content = document.getElementById('tl-content');
-            content.innerHTML = logs.length ? '' : '<p class="text-center text-slate-400 py-10 text-sm italic">Tidak ada catatan.</p>';
-            
+            content.innerHTML = logs.length ? '' : '<p class="text-center text-slate-400 py-4">Kosong</p>';
             logs.forEach((item, idx) => {
-                content.innerHTML += `
-                    <div class="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100">
-                        <div class="flex-1 pr-4">
-                            <span class="text-[10px] text-slate-400 font-bold block leading-none mb-1">${item.time}</span>
-                            <span class="text-sm font-bold text-slate-700">${item.act}</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-black text-blue-600">${item.dur}m</span>
-                            <button onclick="deleteAct('${date}', ${idx})" class="text-slate-300 hover:text-red-500 transition">✕</button>
-                        </div>
-                    </div>`;
+                content.innerHTML += `<div class="bg-slate-50 p-3 rounded-2xl flex justify-between items-center border border-slate-100">
+                    <div class="text-xs"><b>${item.time}</b> - ${item.act}</div>
+                    <div class="flex items-center gap-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${item.dur}m</span><button onclick="deleteAct('${date}', ${idx})" class="text-red-400 text-xs">✕</button></div>
+                </div>`;
             });
             document.getElementById('modal-overlay').classList.remove('hidden');
             document.getElementById('modal-timeline').classList.remove('hidden');
@@ -216,25 +191,12 @@
 
             if(chart) chart.destroy();
             chart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: last7Days.map(d => d.split('-').slice(2).join('/')),
-                    datasets: [{
-                        label: 'Durasi (Menit)',
-                        data: data,
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 6,
-                        hoverBackgroundColor: '#1d4ed8'
-                    }]
+                    labels: last7Days.map(d => d.split('-').slice(1).join('/')),
+                    datasets: [{ label: 'Menit', data: data, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.05)', pointRadius: 4 }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
-                    }
-                }
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
             });
         }
 
@@ -246,11 +208,11 @@
             
             const badge = document.getElementById('comparison-badge');
             if (durToday > durYesterday) {
-                badge.innerHTML = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">🔥 +${durToday - durYesterday}m lebih aktif dari kemarin</span>`;
-            } else if (durToday < durYesterday && durYesterday > 0) {
-                badge.innerHTML = `<span class="text-[10px] bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-bold">📉 Turun ${durYesterday - durToday}m dari kemarin</span>`;
+                badge.innerHTML = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">↑ Lebih produktif dari kemarin (+${durToday - durYesterday}m)</span>`;
+            } else if (durToday < durYesterday) {
+                badge.innerHTML = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">↓ Turun ${durYesterday - durToday}m dari kemarin</span>`;
             } else {
-                badge.innerHTML = `<span class="text-[10px] bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-bold">Konsisten dengan kemarin</span>`;
+                badge.innerHTML = `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full font-bold">Sama seperti kemarin</span>`;
             }
         }
 
