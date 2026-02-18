@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Log: Modern Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .cell { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; transition: all 0.2s; }
+        .cell-none { background-color: #ebedf0; }
+        .cell-wash { background-color: #9be9a8; }
+        .cell-oil { background-color: #40c463; }
+        .cell-service { background-color: #216e39; }
+        .cell-custom { background-color: #4099ff; }
+        
+        .day-label { font-size: 9px; color: #717171; height: 11px; line-height: 11px; }
+        .month-labels { display: flex; font-size: 10px; color: #717171; margin-bottom: 4px; margin-left: 28px; }
+        @media (max-width: 640px) { .scroll-container { overflow-x: auto; padding-bottom: 10px; } }
+        
+        /* Animasi Modal */
+        .modal-fade { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-[#f6f8fa] text-gray-800 font-sans p-4 md:p-10">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-start mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight" id="user-title">Activity Log</h1>
+                <p class="text-sm text-gray-500" id="user-subtitle">Memuat data...</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+                <button onclick="openUserModal()" class="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition">Ganti User</button>
+                <button onclick="openConfirmReset()" class="text-xs font-semibold text-red-500 hover:text-red-700 transition">Reset Data</button>
+            </div>
+        </header>
+
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-8">
+            <h3 class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Input Hari Ini</h3>
+            <div class="flex flex-col md:flex-row gap-3">
+                <div class="bg-gray-50 border px-3 py-2 rounded text-sm text-gray-500 font-mono flex items-center md:w-48" id="display-date"></div>
+                <input type="text" id="quick-input" placeholder="Tulis aktivitas..." class="flex-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <button onclick="submitQuickLog()" class="bg-gray-900 text-white px-8 py-2 rounded-lg text-sm font-bold hover:bg-black transition shadow-sm">Submit</button>
+            </div>
+        </div>
+
+        <div class="scroll-container border border-gray-200 rounded-xl p-6 bg-white shadow-sm mb-10">
+            <div class="calendar-wrapper w-[780px]">
+                <div id="month-header" class="month-labels font-medium"></div>
+                <div class="flex gap-2">
+                    <div class="grid grid-rows-7 gap-[3px] pt-[1px]">
+                        <div class="day-label italic"></div><div class="day-label">Sen</div><div class="day-label italic"></div><div class="day-label">Rab</div><div class="day-label italic"></div><div class="day-label">Jum</div><div class="day-label italic"></div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-flow-col grid-rows-7 gap-[3px]"></div>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-4 text-[10px] text-gray-400 justify-end items-center">
+                <span>Kurang</span>
+                <div class="cell cell-none"></div><div class="cell cell-wash"></div><div class="cell cell-oil"></div><div class="cell cell-service"></div>
+                <span>Lebih</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider">5 Aktivitas Terakhir</h2>
+            </div>
+            <table class="min-w-full divide-y divide-gray-100">
+                <tbody id="recent-list" class="divide-y divide-gray-100 text-sm"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        
+        <div id="modal-user" class="hidden modal-fade bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border">
+            <h2 class="text-xl font-bold mb-1">Siapa Anda?</h2>
+            <p class="text-sm text-gray-500 mb-6">Masukkan nama untuk memisahkan data.</p>
+            <input type="text" id="user-input-field" placeholder="Nama Anda..." class="w-full p-3 border rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <button onclick="confirmUser()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">Mulai Sekarang</button>
+        </div>
+
+        <div id="modal-reset" class="hidden modal-fade bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">??</div>
+            <h2 class="text-xl font-bold mb-2">Hapus Semua Data?</h2>
+            <p class="text-sm text-gray-500 mb-6">Tindakan ini akan menghapus seluruh riwayat aktivitas Anda secara permanen.</p>
+            <div class="flex gap-3">
+                <button onclick="closeModals()" class="flex-1 py-3 bg-gray-100 rounded-xl font-bold hover:bg-gray-200 transition">Batal</button>
+                <button onclick="executeReset()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">Ya, Hapus</button>
+            </div>
+        </div>
+
+        <div id="modal-edit" class="hidden modal-fade bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border">
+            <p id="edit-date-title" class="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-widest"></p>
+            <h2 class="text-lg font-bold mb-4">Edit Aktivitas</h2>
+            <input type="text" id="edit-input-field" class="w-full p-3 border rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <div class="flex flex-col gap-2">
+                <button onclick="saveEdit()" class="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition">Update Data</button>
+                <button onclick="deleteEntry()" class="w-full py-2 text-sm text-red-500 font-semibold hover:bg-red-50 rounded-lg transition">Hapus Aktivitas</button>
+                <button onclick="closeModals()" class="mt-2 text-xs text-gray-400 hover:underline">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        let currentUser = params.get('user');
+        let selectedDate = '';
+
+        // UI Elements
+        const overlay = document.getElementById('modal-overlay');
+        const grid = document.getElementById('calendar-grid');
+        const recentList = document.getElementById('recent-list');
+        const quickInput = document.getElementById('quick-input');
+        
+        // Cek User Saat Start
+        window.onload = () => {
+            if (!currentUser) {
+                openUserModal();
+            } else {
+                setupApp();
+            }
+        };
+
+        function setupApp() {
+            document.getElementById('user-title').innerText = `Log ${currentUser}`;
+            document.getElementById('user-subtitle').innerText = `Dashboard aktivitas tahun 2026`;
+            document.getElementById('display-date').innerText = new Date().toISOString().split('T')[0];
+            init();
+        }
+
+        // --- LOGIC MODAL ---
+        function openUserModal() {
+            overlay.classList.remove('hidden');
+            document.getElementById('modal-user').classList.remove('hidden');
+        }
+
+        function confirmUser() {
+            const val = document.getElementById('user-input-field').value.trim();
+            if (val) window.location.search = `?user=${val.replace(/\s+/g, '').toLowerCase()}`;
+        }
+
+        function openConfirmReset() {
+            overlay.classList.remove('hidden');
+            document.getElementById('modal-reset').classList.remove('hidden');
+        }
+
+        function openEditModal(date, content) {
+            selectedDate = date;
+            document.getElementById('edit-date-title').innerText = date;
+            document.getElementById('edit-input-field').value = content !== 'none' ? content : '';
+            overlay.classList.remove('hidden');
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
+
+        function closeModals() {
+            overlay.classList.add('hidden');
+            document.querySelectorAll('#modal-overlay > div').forEach(m => m.classList.add('hidden'));
+        }
+
+        // --- LOGIC CORE ---
+        function getStorageKey() { return `logs_${currentUser}`; }
+        function getLogs() { return JSON.parse(localStorage.getItem(getStorageKey())) || {}; }
+
+        function init() {
+            renderCalendar();
+            renderRecent();
+        }
+
+        function renderCalendar() {
+            grid.innerHTML = '';
+            const logs = getLogs();
+            const startOfYear = new Date(2026, 0, 1);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            let lastMonth = -1;
+            document.getElementById('month-header').innerHTML = '';
+
+            for (let i = 0; i < 371; i++) {
+                const d = new Date(startOfYear);
+                d.setDate(startOfYear.getDate() + i);
+                
+                if (d.getMonth() !== lastMonth && i % 7 === 0) {
+                    const mLabel = document.createElement('div');
+                    mLabel.style.width = "61px";
+                    mLabel.innerText = months[d.getMonth()];
+                    document.getElementById('month-header').appendChild(mLabel);
+                    lastMonth = d.getMonth();
+                }
+
+                const dateStr = d.toISOString().split('T')[0];
+                const content = logs[dateStr] || 'none';
+                const cell = document.createElement('div');
+                cell.className = `cell ${getColorClass(content)} cursor-pointer border-[0.5px] border-black/5 hover:ring-2 ring-blue-400`;
+                cell.onclick = () => openEditModal(dateStr, content);
+                grid.appendChild(cell);
+            }
+        }
+
+        function getColorClass(text) {
+            if (!text || text === 'none') return 'cell-none';
+            const val = text.toLowerCase();
+            if (val.includes('cuci')) return 'cell-wash';
+            if (val.includes('oli')) return 'cell-oil';
+            if (val.includes('servis')) return 'cell-service';
+            return 'cell-custom';
+        }
+
+        function renderRecent() {
+            recentList.innerHTML = '';
+            const logs = getLogs();
+            const sorted = Object.entries(logs).sort((a, b) => new Date(b[0]) - new Date(a[0])).slice(0, 5);
+            
+            if (sorted.length === 0) {
+                recentList.innerHTML = `<tr><td class="px-5 py-8 text-center text-gray-400 italic">Belum ada aktivitas tercatat.</td></tr>`;
+                return;
+            }
+            sorted.forEach(([date, text]) => {
+                recentList.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition">
+                        <td class="px-5 py-3 text-xs font-mono text-gray-400 w-32">${date}</td>
+                        <td class="px-5 py-3 font-semibold text-gray-700">${text}</td>
+                    </tr>`;
+            });
+        }
+
+        function submitQuickLog() {
+            const val = quickInput.value.trim();
+            if (!val) return;
+            const logs = getLogs();
+            logs[new Date().toISOString().split('T')[0]] = val;
+            localStorage.setItem(getStorageKey(), JSON.stringify(logs));
+            quickInput.value = '';
+            init();
+        }
+
+        function saveEdit() {
+            const val = document.getElementById('edit-input-field').value.trim();
+            const logs = getLogs();
+            if (val) logs[selectedDate] = val;
+            localStorage.setItem(getStorageKey(), JSON.stringify(logs));
+            closeModals();
+            init();
+        }
+
+        function deleteEntry() {
+            const logs = getLogs();
+            delete logs[selectedDate];
+            localStorage.setItem(getStorageKey(), JSON.stringify(logs));
+            closeModals();
+            init();
+        }
+
+        function executeReset() {
+            localStorage.removeItem(getStorageKey());
+            closeModals();
+            init();
+        }
+    </script>
+</body>
+</html>
