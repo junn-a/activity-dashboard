@@ -3,86 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Tracker Pro: Duration & Analytics</title>
+    <title>Activity Tracker Pro: Smart Badges</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .cell { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; transition: all 0.2s; }
         .cell-none { background-color: #ebedf0; }
         .cell-active { background-color: #40c463; }
+        .cell-filtered { opacity: 0.15; }
         .day-label { font-size: 9px; color: #717171; height: 11px; line-height: 11px; }
         .month-labels { display: flex; font-size: 10px; color: #717171; margin-bottom: 4px; margin-left: 28px; }
         @media (max-width: 640px) { .scroll-container { overflow-x: auto; padding-bottom: 10px; } }
         .modal-fade { animation: fadeIn 0.15s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-800 font-sans p-4 md:p-8">
 
     <div class="max-w-4xl mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <div>
+        <header class="mb-8">
+            <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-black text-slate-900" id="user-title">Activity Log</h1>
-                <div id="comparison-badge" class="mt-1"></div>
+                <button onclick="openUserModal()" class="text-xs font-bold bg-white border px-4 py-2 rounded-lg shadow-sm">Ganti User</button>
             </div>
-            <button onclick="openUserModal()" class="text-xs font-bold bg-white border px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50">Ganti User</button>
+            <div id="badges-container" class="mt-4 flex flex-wrap gap-2">
+                </div>
         </header>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="md:col-span-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Aktivitas</label>
-                    <input type="text" id="quick-input" placeholder="Apa yang kamu lakukan?" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Aktivitas</label>
+                    <input type="text" id="quick-input" placeholder="Contoh: Baca Al-Quran" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Durasi (Menit)</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Menit</label>
                     <input type="number" id="duration-input" placeholder="0" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
                 <div class="flex items-end">
-                    <button onclick="submitLog()" class="w-full bg-slate-900 text-white p-2.5 rounded-xl font-bold hover:bg-black transition shadow-lg">Simpan</button>
+                    <button onclick="submitLog()" class="w-full bg-blue-600 text-white p-2.5 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">Simpan</button>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div class="lg:col-span-2 space-y-8">
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="mb-6">
+            <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Filter Kegiatan</h3>
+            <div id="tag-container" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div id="month-header" class="month-labels font-medium text-slate-400"></div>
                     <div class="flex gap-2">
                         <div class="grid grid-rows-7 gap-[3px] pt-[1px]">
-                            <div class="day-label italic"></div><div class="day-label">Sen</div><div class="day-label italic"></div><div class="day-label">Rab</div><div class="day-label italic"></div><div class="day-label">Jum</div><div class="day-label italic"></div>
+                            <div class="day-label"></div><div class="day-label">Sen</div><div class="day-label"></div><div class="day-label">Rab</div><div class="day-label"></div><div class="day-label">Jum</div><div class="day-label"></div>
                         </div>
                         <div id="calendar-grid" class="grid grid-flow-col grid-rows-7 gap-[3px]"></div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase mb-4 tracking-widest">Tren Durasi 7 Hari Terakhir</h3>
-                    <canvas id="activityChart" height="100"></canvas>
+                    <canvas id="activityChart" height="120"></canvas>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-fit">
-                <div class="p-4 border-b bg-slate-50">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">5 Hari Terakhir</h3>
-                </div>
-                <div id="recent-days-list" class="divide-y">
-                    </div>
+                <div class="p-4 border-b bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest">5 Hari Terakhir</div>
+                <div id="recent-days-list" class="divide-y divide-slate-100"></div>
             </div>
         </div>
     </div>
 
     <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div id="modal-timeline" class="hidden modal-fade bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm border">
-            <h2 id="tl-date" class="text-lg font-black mb-4">Breakdown Hari</h2>
-            <div id="tl-content" class="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2"></div>
-            <button onclick="closeModals()" class="w-full py-3 bg-slate-100 rounded-2xl font-bold text-slate-600">Tutup</button>
+            <h2 id="tl-date" class="text-lg font-black mb-4">Detail Kegiatan</h2>
+            <div id="tl-content" class="space-y-3 mb-6 max-h-80 overflow-y-auto pr-2"></div>
+            <button onclick="closeModals()" class="w-full py-3 bg-slate-100 rounded-2xl font-bold">Tutup</button>
         </div>
-
-        <div id="modal-user" class="hidden modal-fade bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center">
-            <h2 class="text-xl font-black mb-6">Mulai Log</h2>
-            <input type="text" id="user-field" placeholder="Nama Anda" class="w-full p-3 border rounded-2xl mb-4 outline-none text-center">
-            <button onclick="confirmUser()" class="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold">Masuk</button>
+        <div id="modal-user" class="hidden modal-fade bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center border">
+            <h2 class="text-xl font-black mb-6">Siapa Anda?</h2>
+            <input type="text" id="user-field" placeholder="Nama" class="w-full p-3 border rounded-2xl mb-4 text-center">
+            <button onclick="confirmUser()" class="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold">Buka Dashboard</button>
         </div>
     </div>
 
@@ -90,23 +94,82 @@
         const params = new URLSearchParams(window.location.search);
         let user = params.get('user');
         let chart;
+        let activeFilter = null;
+
+        // --- SMART TAG LOGIC ---
+        function getSmartTag(text) {
+            let clean = text.toLowerCase()
+                .replace(/(membaca|baca|nonton|ke|melihat|lagi|sedang)/g, '')
+                .replace(/(al-quran|alquran|quran)/g, 'quran')
+                .trim();
+            return clean.split(' ')[0]; // Ambil kata kunci utama
+        }
 
         window.onload = () => { if(!user) openUserModal(); else setupApp(); };
 
         function setupApp() {
-            document.getElementById('user-title').innerText = `Halo, ${user}!`;
+            document.getElementById('user-title').innerText = `Log ${user}`;
             init();
         }
 
-        function getLogs() { return JSON.parse(localStorage.getItem(`prolog_${user}`)) || {}; }
-        function saveLogs(data) { localStorage.setItem(`prolog_${user}`, JSON.stringify(data)); init(); }
+        function getLogs() { return JSON.parse(localStorage.getItem(`prolog_v4_${user}`)) || {}; }
+        function saveLogs(data) { localStorage.setItem(`prolog_v4_${user}`, JSON.stringify(data)); init(); }
 
         function init() {
             const logs = getLogs();
             renderCalendar(logs);
             renderRecentDays(logs);
             renderChart(logs);
-            updateComparison(logs);
+            renderBadges(logs);
+            renderTags(logs);
+        }
+
+        function renderTags(logs) {
+            const container = document.getElementById('tag-container');
+            const tags = new Set();
+            Object.values(logs).forEach(day => day.forEach(act => tags.add(getSmartTag(act.act))));
+            
+            container.innerHTML = `<button onclick="filterByTag(null)" class="px-3 py-1 rounded-full border text-xs ${!activeFilter ? 'bg-slate-900 text-white' : 'bg-white'}">Semua</button>`;
+            tags.forEach(tag => {
+                container.innerHTML += `<button onclick="filterByTag('${tag}')" class="px-3 py-1 rounded-full border text-xs ${activeFilter === tag ? 'bg-blue-600 text-white' : 'bg-white'}">#${tag}</button>`;
+            });
+        }
+
+        function filterByTag(tag) { activeFilter = tag; init(); }
+
+        function renderBadges(logs) {
+            const container = document.getElementById('badges-container');
+            container.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            
+            const stats = {};
+            const getStats = (date) => {
+                const dayStats = {};
+                (logs[date] || []).forEach(a => {
+                    const tag = getSmartTag(a.act);
+                    dayStats[tag] = (dayStats[tag] || 0) + a.dur;
+                });
+                return dayStats;
+            };
+
+            const todayStats = getStats(today);
+            const yesterdayStats = getStats(yesterday);
+            const allTags = new Set([...Object.keys(todayStats), ...Object.keys(yesterdayStats)]);
+
+            allTags.forEach(tag => {
+                const tDur = todayStats[tag] || 0;
+                const yDur = yesterdayStats[tag] || 0;
+                let color = "bg-slate-100 text-slate-500";
+                let icon = "⏸️";
+                let text = `${tag} sama dengan kemarin`;
+
+                if (tDur > yDur) { color = "bg-emerald-100 text-emerald-700"; icon = "🔥"; text = `${tag} meningkat!`; }
+                else if (tDur < yDur && tDur > 0) { color = "bg-amber-100 text-amber-700"; icon = "📉"; text = `${tag} menurun`; }
+                else if (tDur === 0 && yDur > 0) { color = "bg-red-100 text-red-700"; icon = "⚠️"; text = `Belum ${tag} hari ini`; }
+
+                container.innerHTML += `<span class="text-[10px] px-3 py-1.5 rounded-full font-bold flex items-center gap-1 ${color}">${icon} ${text} (${tDur}m)</span>`;
+            });
         }
 
         function renderCalendar(logs) {
@@ -114,16 +177,14 @@
             const mHeader = document.getElementById('month-header');
             grid.innerHTML = ''; mHeader.innerHTML = '';
             const start = new Date(2026, 0, 1);
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
             for (let i = 0; i < 371; i++) {
                 const d = new Date(start); d.setDate(start.getDate() + i);
                 const dateStr = d.toISOString().split('T')[0];
-                if (d.getMonth() !== (new Date(start.getTime() + (i-7)*86400000).getMonth()) && i%7===0) {
-                    const l = document.createElement('div'); l.style.width="61px"; l.innerText=months[d.getMonth()]; mHeader.appendChild(l);
-                }
+                const dayActs = logs[dateStr] || [];
+                const matchesFilter = !activeFilter || dayActs.some(a => getSmartTag(a.act) === activeFilter);
+                
                 const cell = document.createElement('div');
-                cell.className = `cell ${logs[dateStr] ? 'cell-active' : 'cell-none'} cursor-pointer hover:ring-2 ring-blue-400`;
+                cell.className = `cell ${dayActs.length ? 'cell-active' : 'cell-none'} ${!matchesFilter ? 'cell-filtered' : ''} cursor-pointer hover:ring-2 ring-blue-400`;
                 cell.onclick = () => showTimeline(dateStr);
                 grid.appendChild(cell);
             }
@@ -132,90 +193,48 @@
         function submitLog() {
             const act = document.getElementById('quick-input').value.trim();
             const dur = parseInt(document.getElementById('duration-input').value);
-            if(!act || isNaN(dur)) return alert("Isi aktivitas dan durasi!");
-            
+            if(!act || isNaN(dur)) return;
             const logs = getLogs();
             const today = new Date().toISOString().split('T')[0];
             if(!logs[today]) logs[today] = [];
             logs[today].push({ act, dur, time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
-            
-            document.getElementById('quick-input').value = '';
-            document.getElementById('duration-input').value = '';
             saveLogs(logs);
+            document.getElementById('quick-input').value = ''; document.getElementById('duration-input').value = '';
         }
 
         function renderRecentDays(logs) {
-            const list = document.getElementById('recent-days-list');
-            list.innerHTML = '';
-            const sortedDates = Object.keys(logs).sort((a,b) => b.localeCompare(a)).slice(0, 5);
-            
-            sortedDates.forEach(date => {
-                const totalDur = logs[date].reduce((sum, item) => sum + item.dur, 0);
-                const div = document.createElement('div');
-                div.className = "p-4 hover:bg-blue-50 cursor-pointer transition flex justify-between items-center";
-                div.onclick = () => showTimeline(date);
-                div.innerHTML = `<div><p class="text-xs font-bold text-slate-400">${date}</p><p class="font-bold">${logs[date].length} Kegiatan</p></div><div class="text-right"><span class="text-blue-600 font-black text-sm">${totalDur}m</span></div>`;
-                list.appendChild(div);
+            const list = document.getElementById('recent-days-list'); list.innerHTML = '';
+            Object.keys(logs).sort((a,b) => b.localeCompare(a)).slice(0, 5).forEach(date => {
+                const total = logs[date].reduce((s, a) => s + a.dur, 0);
+                list.innerHTML += `<div onclick="showTimeline('${date}')" class="p-4 hover:bg-slate-50 cursor-pointer flex justify-between items-center group">
+                    <div><p class="text-[9px] font-bold text-slate-400 uppercase">${date}</p><p class="text-sm font-bold text-slate-700">${logs[date].length} Kegiatan</p></div>
+                    <div class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black">${total}m</div>
+                </div>`;
             });
         }
 
         function showTimeline(date) {
-            const logs = getLogs()[date] || [];
+            const acts = getLogs()[date] || [];
             document.getElementById('tl-date').innerText = date;
             const content = document.getElementById('tl-content');
-            content.innerHTML = logs.length ? '' : '<p class="text-center text-slate-400 py-4">Kosong</p>';
-            logs.forEach((item, idx) => {
-                content.innerHTML += `<div class="bg-slate-50 p-3 rounded-2xl flex justify-between items-center border border-slate-100">
-                    <div class="text-xs"><b>${item.time}</b> - ${item.act}</div>
-                    <div class="flex items-center gap-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${item.dur}m</span><button onclick="deleteAct('${date}', ${idx})" class="text-red-400 text-xs">✕</button></div>
+            content.innerHTML = acts.length ? '' : '<p class="text-center text-slate-400 py-10 text-sm">Kosong</p>';
+            acts.forEach((a, i) => {
+                content.innerHTML += `<div class="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100">
+                    <div class="flex-1 pr-4"><span class="text-[10px] text-slate-400 font-bold block mb-1">${a.time}</span><span class="text-sm font-bold text-slate-700">${a.act}</span></div>
+                    <div class="flex items-center gap-3"><span class="text-xs font-black text-blue-600">${a.dur}m</span><button onclick="deleteAct('${date}', ${i})" class="text-slate-300 hover:text-red-500">✕</button></div>
                 </div>`;
             });
-            document.getElementById('modal-overlay').classList.remove('hidden');
-            document.getElementById('modal-timeline').classList.remove('hidden');
+            document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById('modal-timeline').classList.remove('hidden');
         }
 
-        function deleteAct(date, idx) {
-            const logs = getLogs(); logs[date].splice(idx, 1);
-            if(!logs[date].length) delete logs[date];
-            saveLogs(logs); closeModals();
-        }
-
+        function deleteAct(date, idx) { const l = getLogs(); l[date].splice(idx, 1); if(!l[date].length) delete l[date]; saveLogs(l); closeModals(); }
         function renderChart(logs) {
             const ctx = document.getElementById('activityChart').getContext('2d');
-            const last7Days = [...Array(7)].map((_, i) => {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                return d.toISOString().split('T')[0];
-            }).reverse();
-
-            const data = last7Days.map(d => logs[d] ? logs[d].reduce((s, a) => s + a.dur, 0) : 0);
-
+            const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0]; }).reverse();
+            const data = days.map(d => (logs[d] || []).reduce((s, a) => s + a.dur, 0));
             if(chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: last7Days.map(d => d.split('-').slice(1).join('/')),
-                    datasets: [{ label: 'Menit', data: data, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.05)', pointRadius: 4 }]
-                },
-                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
+            chart = new Chart(ctx, { type: 'bar', data: { labels: days.map(d => d.split('-').slice(2)), datasets: [{ label: 'Menit', data: data, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
         }
-
-        function updateComparison(logs) {
-            const today = new Date().toISOString().split('T')[0];
-            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-            const durToday = (logs[today] || []).reduce((s, a) => s + a.dur, 0);
-            const durYesterday = (logs[yesterday] || []).reduce((s, a) => s + a.dur, 0);
-            
-            const badge = document.getElementById('comparison-badge');
-            if (durToday > durYesterday) {
-                badge.innerHTML = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">↑ Lebih produktif dari kemarin (+${durToday - durYesterday}m)</span>`;
-            } else if (durToday < durYesterday) {
-                badge.innerHTML = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">↓ Turun ${durYesterday - durToday}m dari kemarin</span>`;
-            } else {
-                badge.innerHTML = `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full font-bold">Sama seperti kemarin</span>`;
-            }
-        }
-
         function openUserModal() { document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById('modal-user').classList.remove('hidden'); }
         function closeModals() { document.getElementById('modal-overlay').classList.add('hidden'); document.getElementById('modal-user').classList.add('hidden'); document.getElementById('modal-timeline').classList.add('hidden'); }
         function confirmUser() { const u = document.getElementById('user-field').value.trim(); if(u) window.location.search = `?user=${u.toLowerCase()}`; }
