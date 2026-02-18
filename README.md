@@ -1,11 +1,11 @@
-# 🏍️ MotorLog & Activity Tracker
+# Daily Activity Tracker
 > **Modern GitHub-Style Activity Tracker for Your Daily Maintenance and Tasks.**
 
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![Hosting](https://img.shields.io/badge/Hosting-GitHub_Pages-blue)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 
-Aplikasi web ringan berbasis **Single-File** untuk mencatat riwayat perawatan motor (ganti oli, cuci, servis) atau kegiatan harian lainnya dengan visualisasi heatmap ala kontribusi GitHub.
+Aplikasi web ringan berbasis **Single-File** untuk mencatat riwayat aktivitas kamu misal perawatan motor (ganti oli, cuci, servis) atau kegiatan harian lainnya dengan visualisasi heatmap ala kontribusi GitHub.
 
 ---
 
@@ -19,18 +19,7 @@ Aplikasi web ringan berbasis **Single-File** untuk mencatat riwayat perawatan mo
 - **🔒 Privacy Focused**: Data disimpan secara lokal di browser Anda menggunakan `LocalStorage`.
 - **💎 Modern UI**: Menggunakan Tailwind CSS dengan custom modal yang elegan (bukan popup browser jadul).
 
----
 
-## 🚀 Cara Instalasi & Hosting (Gratis)
-
-Aplikasi ini sangat mudah untuk di-onlinekan:
-
-1. **Fork atau Download** repository ini.
-2. Pastikan file utama bernama `index.html`.
-3. Upload ke **GitHub Repository** Anda.
-4. Masuk ke **Settings > Pages**.
-5. Pilih Branch `main`, lalu **Save**.
-6. **Selesai!** Link aplikasi Anda akan segera aktif.
 
 ---
 
@@ -58,5 +47,6 @@ Agar data tetap aman, jangan sering menghapus *Cache/Clear Data* browser Anda, k
 
 ---
 
-Dibuat dengan ❤️ untuk para pecinta motor dan produktivitas.  
-**Bikin motormu kinclong, catat riwayatnya!** 🛵✨
+Dibuat dengan ❤️ untuk kamu biar makin produktif.  
+
+**Biar makin produktif, catat aktivitas kamu!** 🛵✨
