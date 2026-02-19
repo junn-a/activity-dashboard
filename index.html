@@ -3,70 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Tracker - Clean Filter</title>
+    <title>getHabbit</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .cell { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; transition: all 0.2s; }
-        .cell-none { background-color: #ebedf0; }
-        .cell-active { background-color: #40c463; }
-        .cell-filtered { opacity: 0.1; background-color: #ebedf0; border: none; }
-        
-        .day-label { font-size: 9px; color: #717171; height: 11px; line-height: 11px; }
-        .month-labels { display: flex; font-size: 10px; color: #717171; margin-bottom: 4px; margin-left: 28px; }
-        
-        /* Mencegah Offside */
-        .scroll-container { 
-            overflow-x: auto; 
-            white-space: nowrap; 
-            -webkit-overflow-scrolling: touch;
-        }
-        .calendar-wrapper { min-width: 780px; }
-
-        .modal-fade { animation: fadeIn 0.15s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .cell { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+        .cell-none { background-color: #f1f5f9; }
+        .cell-plan { background-color: #ffedd5; border: 1px solid #fed7aa; } 
+        .cell-active { background-color: #22c55e; } 
+        .cell-filtered { opacity: 0.1; }
+        .scroll-container { overflow-x: auto; padding-bottom: 10px; }
+        .calendar-wrapper { min-width: 800px; }
+        .day-label { font-size: 8px; color: #94a3b8; height: 11px; line-height: 11px; width: 20px; }
+        ::-webkit-scrollbar { height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-800 p-4 md:p-8">
+<body class="bg-[#fcfdfe] text-slate-800 p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <header class="mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl font-black text-slate-900" id="user-title">Log</h1>
-                <button onclick="openUserModal()" class="text-xs font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg">Ganti User</button>
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
+            <div>
+                <p class="text-blue-600 font-bold text-xs uppercase tracking-widest mb-1">Performance Tracking</p>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight" id="user-title">Dashboard</h1>
             </div>
-            <div id="badges-container" class="flex flex-wrap gap-2"></div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="exportData()" class="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl">📥 EXPORT</button>
+                <button onclick="toggleModal('modal-master')" class="text-[10px] font-bold bg-white border border-slate-200 shadow-sm px-3 py-2 rounded-xl">⚙️ MASTER</button>
+                <button onclick="toggleModal('modal-plan')" class="text-[10px] font-bold bg-orange-500 text-white px-4 py-2 rounded-xl shadow-lg">📅 RENCANA</button>
+                <button onclick="openUserModal()" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-xl">👤 USER</button>
+            </div>
         </header>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="md:col-span-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Aktivitas</label>
-                    <input type="text" id="quick-input" placeholder="Misal: Baca Quran" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-start">
+    
+    <div class="lg:col-span-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-black flex items-center gap-2 uppercase tracking-tight text-slate-500">
+                🚀 Jadwal Hari Ini
+            </h2>
+            <div id="table-pagination" class="flex items-center gap-3"></div>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
+                        <th class="px-6 py-3">Aktivitas</th>
+                        <th class="px-6 py-3">Aktual</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3 text-center">Vs Kemarin</th>
+                    </tr>
+                </thead>
+                <tbody id="daily-table-body" class="text-sm font-semibold text-slate-700"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="lg:col-span-4 lg:mt-9">
+        <div class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl">
+            <h3 class="text-white text-xs font-bold mb-4 uppercase tracking-widest opacity-60">Log Progress</h3>
+            <div class="space-y-3">
+                <select id="log-activity" class="w-full h-12 px-4 bg-slate-800 border-none rounded-2xl text-white text-xs font-bold focus:ring-2 ring-blue-500 outline-none">
+                    <option value="">Pilih Aktivitas</option>
+                </select>
+                <div class="relative">
+                    <input type="number" id="log-value" placeholder="0" class="w-full h-12 px-4 bg-slate-800 border-none rounded-2xl text-white text-sm font-bold outline-none focus:ring-2 ring-blue-500">
+                    <span id="display-satuan" class="absolute right-4 top-3.5 text-[10px] text-slate-400 font-bold uppercase tracking-widest"></span>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Durasi (Menit)</label>
-                    <input type="number" id="duration-input" placeholder="0" class="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
-                </div>
-                <div class="flex items-end">
-                    <button onclick="submitLog()" class="w-full bg-slate-900 text-white p-2.5 rounded-xl font-bold hover:bg-black transition">Simpan</button>
-                </div>
+                <button onclick="submitLog()" class="w-full h-12 bg-blue-500 text-white rounded-2xl font-bold text-sm hover:bg-blue-400 transition-all shadow-lg shadow-blue-500/20">
+                    SIMPAN AKTUAL
+                </button>
             </div>
         </div>
+    </div>
+</div>
 
-        <div class="mb-6 overflow-x-auto pb-2">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Filter Berdasarkan Kegiatan:</h3>
-            <div id="tag-container" class="flex gap-2"></div>
-        </div>
+        <div id="tag-container" class="flex flex-wrap gap-2 mb-8 justify-center"></div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
-            <div class="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-blue-500 rounded-full"></span> Kontribusi Kalender
+                    </h3>
+                    <select id="year-filter" onchange="init()" class="text-xs font-bold border rounded-lg px-2 py-1 bg-slate-50 outline-none"></select>
+                </div>
                 <div class="scroll-container">
                     <div class="calendar-wrapper">
-                        <div id="month-header" class="month-labels font-medium text-slate-400"></div>
+                        <div id="month-header" class="relative h-6 mb-2"></div>
                         <div class="flex gap-2">
-                            <div class="grid grid-rows-7 gap-[3px] pt-[1px]">
-                                <div class="day-label italic"></div><div class="day-label">Sen</div><div class="day-label italic"></div><div class="day-label">Rab</div><div class="day-label italic"></div><div class="day-label">Jum</div><div class="day-label italic"></div>
+                            <div class="grid grid-rows-7 gap-[3px] mt-1">
+                                <div class="day-label">Min</div><div class="day-label">Sen</div><div class="day-label">Sel</div><div class="day-label">Rab</div><div class="day-label">Kam</div><div class="day-label">Jum</div><div class="day-label">Sab</div>
                             </div>
                             <div id="calendar-grid" class="grid grid-flow-col grid-rows-7 gap-[3px]"></div>
                         </div>
@@ -74,25 +103,56 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-fit">
-                <div class="p-4 border-b bg-slate-50">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase">5 Hari Terakhir</h3>
+            <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm h-full">
+                <h3 class="font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-indigo-500 rounded-full"></span> Statistik
+                </h3>
+                <div class="h-64">
+                    <canvas id="dynamicChart"></canvas>
                 </div>
-                <div id="recent-days-list" class="divide-y divide-slate-100"></div>
             </div>
         </div>
     </div>
 
-    <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div id="modal-timeline" class="hidden modal-fade bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm border">
-            <h2 id="tl-date" class="text-lg font-black mb-4 italic">Detail Hari</h2>
-            <div id="tl-content" class="space-y-3 mb-6 max-h-80 overflow-y-auto pr-2"></div>
-            <button onclick="closeModals()" class="w-full py-3 bg-slate-100 rounded-2xl font-bold">Tutup</button>
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div id="modal-master" class="hidden bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-extrabold mb-6 italic">Master Aktivitas</h2>
+            <div class="space-y-4 mb-6 text-left">
+                <input id="master-name" placeholder="Nama Aktivitas" class="w-full p-4 bg-slate-50 border rounded-2xl text-sm outline-none">
+                <input id="master-unit" placeholder="Satuan (Porsi, KM, Kali)" class="w-full p-4 bg-slate-50 border rounded-2xl text-sm outline-none">
+                <button onclick="addMaster()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">TAMBAH</button>
+            </div>
+            <div id="master-list" class="max-h-48 overflow-y-auto space-y-2 pr-2"></div>
+            <button onclick="closeModals()" class="w-full mt-6 text-slate-300 font-bold text-xs uppercase italic">Tutup</button>
         </div>
-        <div id="modal-user" class="hidden modal-fade bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center border">
-            <h2 class="text-xl font-black mb-6">Siapa Anda?</h2>
-            <input type="text" id="user-field" placeholder="Nama..." class="w-full p-3 border rounded-2xl mb-4 text-center">
-            <button onclick="confirmUser()" class="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold">Mulai</button>
+
+        <div id="modal-plan" class="hidden bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-extrabold mb-6 italic text-orange-600">Buat Rencana</h2>
+            <div class="space-y-4 mb-6">
+                <select id="plan-activity" class="w-full p-4 bg-slate-50 border rounded-2xl text-sm outline-none"></select>
+                <input id="plan-target" type="number" placeholder="Target Harian" class="w-full p-4 bg-slate-50 border rounded-2xl text-sm outline-none">
+                <div class="flex gap-2">
+                    <input id="plan-start" type="date" class="w-1/2 p-3 bg-slate-50 border rounded-xl text-xs">
+                    <input id="plan-end" type="date" class="w-1/2 p-3 bg-slate-50 border rounded-xl text-xs">
+                </div>
+                <button onclick="addPlan()" class="w-full bg-orange-500 text-white py-4 rounded-2xl font-bold">SIMPAN</button>
+            </div>
+            <div id="plan-list" class="max-h-40 overflow-y-auto space-y-2 pr-2"></div>
+            <button onclick="closeModals()" class="w-full mt-4 text-slate-300 font-bold text-xs uppercase italic">Tutup</button>
+        </div>
+
+        <div id="modal-timeline" class="hidden bg-white p-8 rounded-[2rem] w-full max-w-xs shadow-2xl text-center">
+            <h2 id="tl-date" class="font-black mb-4 text-blue-600 text-sm"></h2>
+            <div id="tl-content" class="space-y-2 mb-6 max-h-60 overflow-y-auto pr-2"></div>
+            <button onclick="closeModals()" class="w-full py-3 bg-slate-100 rounded-xl font-bold text-xs">TUTUP</button>
+        </div>
+    </div>
+
+    <div id="modal-user-overlay" class="hidden fixed inset-0 bg-slate-900/95 flex items-center justify-center z-[100]">
+        <div class="bg-white p-10 rounded-[3rem] text-center max-w-xs w-full shadow-2xl mx-4">
+            <h2 class="text-2xl font-black mb-6 tracking-tighter">LOG SYSTEM</h2>
+            <input id="user-field" placeholder="Masukkan Nama" class="w-full p-4 border-2 border-slate-100 rounded-2xl mb-4 text-center font-bold outline-none focus:border-blue-500 transition-all">
+            <button onclick="confirmUser()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-sm tracking-widest">Login</button>
         </div>
     </div>
 
@@ -100,144 +160,278 @@
         const params = new URLSearchParams(window.location.search);
         let user = params.get('user');
         let activeFilterTag = null;
+        let chartInstance = null;
+        let currentPage = 1;
+        const itemsPerPage = 3;
 
-        // Normalisasi teks agar kegiatan mirip dianggap sama
-        function normalize(text) {
-            return text.toLowerCase()
-                .replace(/(membaca|baca|nonton|ke|melihat|lagi|sedang)/g, '')
-                .replace(/(al-quran|alquran|quran)/g, 'quran')
-                .trim().split(' ')[0];
+        // Tahun Loader
+        const yearSel = document.getElementById('year-filter');
+        const startY = 2024, endY = 2028;
+        for(let y = startY; y <= endY; y++){
+            const o = document.createElement('option');
+            o.value = y; o.innerText = y;
+            if(y === new Date().getFullYear()) o.selected = true;
+            yearSel.appendChild(o);
         }
 
         window.onload = () => { if(!user) openUserModal(); else setupApp(); };
+        function setupApp() { document.getElementById('user-title').innerText = `Log ${user.toUpperCase()}`; init(); }
 
-        function setupApp() {
-            document.getElementById('user-title').innerText = `Log: ${user}`;
-            init();
-        }
-
-        function getLogs() { return JSON.parse(localStorage.getItem(`clean_log_${user}`)) || {}; }
-        function saveLogs(data) { localStorage.setItem(`clean_log_${user}`, JSON.stringify(data)); init(); }
+        const getMaster = () => JSON.parse(localStorage.getItem(`m_${user}`)) || [];
+        const getPlans = () => JSON.parse(localStorage.getItem(`p_${user}`)) || [];
+        const getLogs = () => JSON.parse(localStorage.getItem(`l_${user}`)) || {};
+        
+        const saveMaster = (d) => { localStorage.setItem(`m_${user}`, JSON.stringify(d)); init(); };
+        const savePlans = (d) => { localStorage.setItem(`p_${user}`, JSON.stringify(d)); init(); };
+        const saveLogs = (d) => { localStorage.setItem(`l_${user}`, JSON.stringify(d)); init(); };
 
         function init() {
             const logs = getLogs();
+            updateSelects();
+            renderTable(logs);
             renderCalendar(logs);
-            renderRecentDays(logs);
-            renderBadges(logs);
-            renderFilterTags(logs);
+            renderFilterTags();
+            renderChart(logs);
+            renderMaster();
+            renderPlans();
         }
 
-        function renderFilterTags(logs) {
-            const container = document.getElementById('tag-container');
-            const tags = new Set();
-            Object.values(logs).forEach(day => day.forEach(a => tags.add(normalize(a.act))));
-            
-            container.innerHTML = `<button onclick="setFilter(null)" class="px-3 py-1 rounded-full border text-[10px] font-bold ${!activeFilterTag ? 'bg-slate-900 text-white' : 'bg-white'}">Semua</button>`;
-            tags.forEach(tag => {
-                if(!tag) return;
-                const isSel = activeFilterTag === tag;
-                container.innerHTML += `<button onclick="setFilter('${tag}')" class="px-3 py-1 rounded-full border text-[10px] font-bold ${isSel ? 'bg-blue-600 text-white' : 'bg-white'}">#${tag.toUpperCase()}</button>`;
-            });
+        function toggleModal(id) { 
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById(id).classList.remove('hidden');
         }
 
-        function setFilter(tag) { activeFilterTag = tag; init(); }
+        function closeModals() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            ['modal-master', 'modal-plan', 'modal-timeline'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
 
-        function renderBadges(logs) {
-            const container = document.getElementById('badges-container');
-            container.innerHTML = '';
+        function updateSelects() {
+            const m = getMaster();
+            const logS = document.getElementById('log-activity'), planS = document.getElementById('plan-activity');
+            const opts = '<option value="">Pilih Aktivitas</option>' + m.map(x => `<option value="${x.name}" data-unit="${x.unit}">${x.name}</option>`).join('');
+            logS.innerHTML = opts; planS.innerHTML = opts;
+            logS.onchange = (e) => document.getElementById('display-satuan').innerText = e.target.options[e.target.selectedIndex].dataset.unit || '';
+        }
+
+        // --- Render Table dengan Pagination ---
+        function renderTable(logs) {
             const today = new Date().toISOString().split('T')[0];
             const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const activePlans = getPlans().filter(p => today >= p.start && today <= p.end);
+            const totalPages = Math.ceil(activePlans.length / itemsPerPage);
             
-            const getDayStats = (date) => {
-                const s = {};
-                (logs[date] || []).forEach(a => { const t = normalize(a.act); s[t] = (s[t] || 0) + a.dur; });
-                return s;
-            };
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const paginatedItems = activePlans.slice(startIdx, startIdx + itemsPerPage);
 
-            const tStats = getDayStats(today);
-            const yStats = getDayStats(yesterday);
-            const allActivities = new Set([...Object.keys(tStats), ...Object.keys(yStats)]);
+            const body = document.getElementById('daily-table-body');
+            const paginContainer = document.getElementById('table-pagination');
+            body.innerHTML = '';
+            paginContainer.innerHTML = '';
 
-            allActivities.forEach(tag => {
-                if(!tag) return;
-                const tDur = tStats[tag] || 0;
-                const yDur = yStats[tag] || 0;
-                let style = "bg-slate-100 text-slate-500";
-                let icon = "⏸️";
-                let msg = `${tag} stabil`;
+            if(activePlans.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-slate-300 italic">Belum ada rencana hari ini</td></tr>';
+                return;
+            }
 
-                if(tDur > yDur) { style = "bg-emerald-100 text-emerald-700"; icon = "🔥"; msg = `${tag} meningkat`; }
-                else if(tDur < yDur && tDur > 0) { style = "bg-amber-100 text-amber-700"; icon = "📉"; msg = `${tag} menurun`; }
-                else if(tDur === 0 && yDur > 0) { style = "bg-red-100 text-red-700"; icon = "⚠️"; msg = `Belum ${tag}`; }
+            // Pagination Controls
+            paginContainer.innerHTML = `
+                <span class="text-[10px] font-bold text-slate-400">Hal ${currentPage} / ${totalPages}</span>
+                <button onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''} class="w-6 h-6 bg-white border rounded flex items-center justify-center disabled:opacity-30">‹</button>
+                <button onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''} class="w-6 h-6 bg-white border rounded flex items-center justify-center disabled:opacity-30">›</button>
+            `;
 
-                container.innerHTML += `<span class="text-[10px] px-3 py-1.5 rounded-full font-black ${style}">${icon} ${msg.toUpperCase()} (${tDur}m)</span>`;
+            paginatedItems.forEach(p => {
+                const m = getMaster().find(x => x.name === p.act);
+                const unit = m ? m.unit : '';
+                const valToday = (logs[today] || []).filter(l => l.act === p.act).reduce((s, x) => s + x.val, 0);
+                const valYest = (logs[yesterday] || []).filter(l => l.act === p.act).reduce((s, x) => s + x.val, 0);
+                const diff = valToday - valYest;
+                const prog = Math.min((valToday / p.target) * 100, 100);
+
+                body.innerHTML += `
+                    <tr class="border-b border-slate-50">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-slate-900">${p.act}</div>
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Target: ${p.target} ${unit}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500" style="width: ${prog}%"></div>
+                                </div>
+                                <span class="text-blue-600 font-bold text-xs">${valToday}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-[11px] font-bold ${valToday >= p.target ? 'text-green-500' : 'text-slate-400'}">
+                            ${valToday >= p.target ? '✓ SELESAI' : '⏳ PROSES'}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-[10px] font-black ${diff >= 0 ? 'text-emerald-500' : 'text-rose-500'}">
+                                ${diff >= 0 ? '↑' : '↓'} ${Math.abs(diff)}
+                            </span>
+                        </td>
+                    </tr>
+                `;
             });
         }
 
+        function changePage(step) { currentPage += step; init(); }
+
+        // --- Render Kalender Akurat ---
         function renderCalendar(logs) {
             const grid = document.getElementById('calendar-grid');
-            const mHeader = document.getElementById('month-header');
-            grid.innerHTML = ''; mHeader.innerHTML = '';
-            const start = new Date(2026, 0, 1);
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const mHead = document.getElementById('month-header');
+            const selYear = parseInt(document.getElementById('year-filter').value);
+            grid.innerHTML = ''; mHead.innerHTML = '';
 
-            for (let i = 0; i < 371; i++) {
-                const d = new Date(start); d.setDate(start.getDate() + i);
-                const dateStr = d.toISOString().split('T')[0];
-                if (d.getMonth() !== (new Date(start.getTime() + (i-7)*86400000).getMonth()) && i%7===0) {
-                    const l = document.createElement('div'); l.style.width="61px"; l.innerText=months[d.getMonth()]; mHeader.appendChild(l);
+            const plans = getPlans();
+            const startYear = new Date(selYear, 0, 1);
+            const firstDay = startYear.getDay(); // 0 (Minggu) s/d 6 (Sabtu)
+
+            // Buat placeholder sel kosong jika 1 Jan bukan Minggu
+            for(let p = 0; p < firstDay; p++){
+                const empty = document.createElement('div');
+                empty.className = 'cell bg-transparent';
+                grid.appendChild(empty);
+            }
+
+            const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+            let lastM = -1;
+
+            // Render 365/366 hari
+            const isLeap = (selYear % 4 === 0 && selYear % 100 !== 0) || (selYear % 400 === 0);
+            const daysInYear = isLeap ? 366 : 365;
+
+            for(let i = 0; i < daysInYear; i++){
+                const d = new Date(selYear, 0, i + 1);
+                const dStr = d.toISOString().split('T')[0];
+                const colIdx = Math.floor((i + firstDay) / 7);
+
+                if(d.getMonth() !== lastM){
+                    const ml = document.createElement('div');
+                    ml.className = 'month-label text-[10px] font-bold text-slate-300 absolute';
+                    ml.style.left = `${colIdx * 14}px`;
+                    ml.innerText = months[d.getMonth()];
+                    mHead.appendChild(ml);
+                    lastM = d.getMonth();
                 }
-                const dayActs = logs[dateStr] || [];
-                const hasData = dayActs.length > 0;
-                const matchesFilter = !activeFilterTag || dayActs.some(a => normalize(a.act) === activeFilterTag);
+
+                const dayLogs = logs[dStr] || [];
+                const dayPlans = plans.filter(p => dStr >= p.start && dStr <= p.end);
+                const matches = !activeFilterTag || dayLogs.some(l => l.act === activeFilterTag) || dayPlans.some(p => p.act === activeFilterTag);
+
+                let color = 'cell-none';
+                if(dayPlans.length > 0){
+                    const win = dayPlans.every(p => dayLogs.filter(l => l.act === p.act).reduce((s,x)=>s+x.val,0) >= p.target);
+                    color = win && dayLogs.length > 0 ? 'cell-active' : 'cell-plan';
+                } else if(dayLogs.length > 0) color = 'cell-active';
 
                 const cell = document.createElement('div');
-                cell.className = `cell ${hasData ? (matchesFilter ? 'cell-active' : 'cell-filtered') : 'cell-none'} cursor-pointer hover:ring-2 ring-blue-400`;
-                cell.onclick = () => showTimeline(dateStr);
+                cell.className = `cell ${color} ${!matches ? 'cell-filtered' : ''} cursor-pointer hover:ring-2 ring-blue-300 transition-all`;
+                cell.onclick = () => showTimeline(dStr);
                 grid.appendChild(cell);
             }
         }
 
+        // --- Render Grafik dengan Sumbu Dinamis ---
+        function renderChart(logs) {
+            const ctx = document.getElementById('dynamicChart');
+            const dates = [...Array(7)].map((_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                return d.toISOString().split('T')[0];
+            }).reverse();
+
+            const unit = activeFilterTag ? (getMaster().find(m => m.name === activeFilterTag)?.unit || '') : 'Total';
+            const dataValues = dates.map(d => (logs[d] || []).filter(l => !activeFilterTag || l.act === activeFilterTag).reduce((s, x) => s + x.val, 0));
+
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: dates.map(d => d.split('-')[2] + '/' + d.split('-')[1]),
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { 
+                            title: { display: true, text: `Jumlah (${unit})`, font: { size: 9, weight: 'bold' } },
+                            beginAtZero: true, 
+                            grid: { color: '#f8fafc' } 
+                        },
+                        x: { 
+                            title: { display: true, text: 'Tanggal', font: { size: 9, weight: 'bold' } },
+                            grid: { display: false } 
+                        }
+                    }
+                }
+            });
+        }
+
+        function showTimeline(dStr) {
+            const logs = getLogs()[dStr] || [];
+            const plans = getPlans().filter(p => dStr >= p.start && dStr <= p.end);
+            document.getElementById('tl-date').innerText = dStr;
+            let h = plans.map(p => {
+                const tot = logs.filter(l => l.act === p.act).reduce((s,x)=>s+x.val, 0);
+                return `<div class="text-[10px] bg-orange-50 p-2 rounded-xl border border-orange-100 text-orange-700">🎯 ${p.act}: ${tot}/${p.target}</div>`;
+            }).join('');
+            h += logs.map((l, i) => `
+                <div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl border text-xs">
+                    <div class="text-left font-bold">${l.act} <span class="block text-[9px] text-slate-400 font-normal">${l.time}</span></div>
+                    <div class="flex items-center gap-2 font-black text-blue-600">${l.val} <button onclick="deleteAct('${dStr}', ${i})" class="text-rose-300">✕</button></div>
+                </div>`).join('') || '<p class="text-[10px] text-slate-300 py-4">Tidak ada aktifitas</p>';
+            document.getElementById('tl-content').innerHTML = h;
+            toggleModal('modal-timeline');
+        }
+
+        function deleteAct(date, idx) {
+            const l = getLogs(); l[date].splice(idx, 1);
+            if(!l[date].length) delete l[date];
+            saveLogs(l); closeModals();
+        }
+
+        function renderFilterTags() {
+            const container = document.getElementById('tag-container');
+            container.innerHTML = `<button onclick="setFilter(null)" class="px-4 py-1.5 rounded-full text-[10px] font-black transition ${!activeFilterTag ? 'bg-slate-900 text-white' : 'bg-white border text-slate-400'}">SEMUA</button>` + 
+                getMaster().map(m => `<button onclick="setFilter('${m.name}')" class="px-4 py-1.5 rounded-full border text-[10px] font-black transition ${activeFilterTag === m.name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400'}">#${m.name.toUpperCase()}</button>`).join('');
+        }
+
+        function setFilter(tag) { activeFilterTag = tag; init(); }
+        function addMaster() {
+            const n = document.getElementById('master-name').value.trim(), u = document.getElementById('master-unit').value.trim();
+            if(n && u) saveMaster([...getMaster(), { id: Date.now(), name: n, unit: u }]);
+        }
+        function addPlan() {
+            const a = document.getElementById('plan-activity').value, t = parseFloat(document.getElementById('plan-target').value), s = document.getElementById('plan-start').value, e = document.getElementById('plan-end').value;
+            if(a && t && s && e) savePlans([...getPlans(), { id: Date.now(), act: a, target: t, start: s, end: e }]);
+        }
         function submitLog() {
-            const act = document.getElementById('quick-input').value.trim();
-            const dur = parseInt(document.getElementById('duration-input').value);
-            if(!act || isNaN(dur)) return;
-            const logs = getLogs();
-            const today = new Date().toISOString().split('T')[0];
-            if(!logs[today]) logs[today] = [];
-            logs[today].push({ act, dur, time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
-            saveLogs(logs);
-            document.getElementById('quick-input').value = ''; document.getElementById('duration-input').value = '';
+            const a = document.getElementById('log-activity').value, v = parseFloat(document.getElementById('log-value').value);
+            if(!a || isNaN(v)) return;
+            const l = getLogs(), today = new Date().toISOString().split('T')[0];
+            if(!l[today]) l[today] = [];
+            l[today].push({ act: a, val: v, time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
+            saveLogs(l); document.getElementById('log-value').value = '';
         }
-
-        function renderRecentDays(logs) {
-            const list = document.getElementById('recent-days-list'); list.innerHTML = '';
-            Object.keys(logs).sort((a,b) => b.localeCompare(a)).slice(0, 5).forEach(date => {
-                const total = logs[date].reduce((s, a) => s + a.dur, 0);
-                list.innerHTML += `<div onclick="showTimeline('${date}')" class="p-4 hover:bg-slate-50 cursor-pointer flex justify-between items-center transition">
-                    <div><p class="text-[9px] font-bold text-slate-400 uppercase">${date}</p><p class="text-sm font-bold text-slate-700">${logs[date].length} Aktif</p></div>
-                    <div class="text-blue-600 font-black text-xs">${total}m</div>
-                </div>`;
-            });
+        function renderMaster() {
+            document.getElementById('master-list').innerHTML = getMaster().map(m => `<div class="flex justify-between p-3 bg-slate-50 rounded-xl border text-xs font-bold"><span>${m.name} (${m.unit})</span> <button onclick="saveMaster(getMaster().filter(x=>x.id!==${m.id}))" class="text-rose-400 font-bold">✕</button></div>`).join('');
         }
-
-        function showTimeline(date) {
-            const acts = getLogs()[date] || [];
-            document.getElementById('tl-date').innerText = date;
-            const content = document.getElementById('tl-content');
-            content.innerHTML = acts.length ? '' : '<p class="text-center text-slate-400 py-10">Kosong</p>';
-            acts.forEach((a, i) => {
-                content.innerHTML += `<div class="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border">
-                    <div class="flex-1 pr-4"><span class="text-[10px] text-slate-400 font-bold block">${a.time}</span><span class="text-sm font-bold">${a.act}</span></div>
-                    <div class="flex items-center gap-3"><span class="text-xs font-black text-blue-600">${a.dur}m</span><button onclick="deleteAct('${date}', ${i})" class="text-red-400">✕</button></div>
-                </div>`;
-            });
-            document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById('modal-timeline').classList.remove('hidden');
+        function renderPlans() {
+            document.getElementById('plan-list').innerHTML = getPlans().map(p => `<div class="p-3 bg-orange-50 border border-orange-100 rounded-xl text-[10px] font-bold"><div class="flex justify-between text-orange-700"><b>${p.act} (${p.target})</b><button onclick="savePlans(getPlans().filter(x=>x.id!==${p.id}))">✕</button></div><span class="text-orange-400 font-normal">${p.start} ~ ${p.end}</span></div>`).join('');
         }
-
-        function deleteAct(date, idx) { const l = getLogs(); l[date].splice(idx, 1); if(!l[date].length) delete l[date]; saveLogs(l); closeModals(); }
-        function openUserModal() { document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById('modal-user').classList.remove('hidden'); }
-        function closeModals() { document.getElementById('modal-overlay').classList.add('hidden'); document.querySelectorAll('#modal-overlay > div').forEach(d => d.classList.add('hidden')); }
+        function exportData() {
+            const blob = new Blob([JSON.stringify({ m: getMaster(), p: getPlans(), l: getLogs() })], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_${user}.json`; a.click();
+        }
+        function openUserModal() { document.getElementById('modal-user-overlay').classList.remove('hidden'); }
         function confirmUser() { const u = document.getElementById('user-field').value.trim(); if(u) window.location.search = `?user=${u.toLowerCase()}`; }
     </script>
 </body>
