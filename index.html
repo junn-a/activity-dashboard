@@ -413,7 +413,51 @@
             const a = document.getElementById('plan-activity').value, t = parseFloat(document.getElementById('plan-target').value), s = document.getElementById('plan-start').value, e = document.getElementById('plan-end').value;
             if(a && t && s && e) savePlans([...getPlans(), { id: Date.now(), act: a, target: t, start: s, end: e }]);
         }
-        function submitLog() {
+        // Ganti dengan URL yang Anda salin dari Google Apps Script tadi
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuvT5xjMIKmW1PFtf4LeqnWipqGTlRFGsA-vrrL4VVNvfUeCAIdGxS-3guRCSHYFMpqg/exec";
+        
+        async function submitLog() {
+            const a = document.getElementById('log-activity').value;
+            const v = parseFloat(document.getElementById('log-value').value);
+            
+            if(!a || isNaN(v)) {
+                alert("Pilih aktivitas dan isi nilai!");
+                return;
+            }
+        
+            // 1. Tetap simpan di LocalStorage (sebagai backup/tampilan cepat)
+            const l = getLogs();
+            const today = new Date().toISOString().split('T')[0];
+            if(!l[today]) l[today] = [];
+            l[today].push({ 
+                act: a, 
+                val: v, 
+                time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) 
+            });
+            saveLogs(l);
+        
+            // 2. KIRIM KE GOOGLE SPREADSHEET
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        user: user,
+                        act: a,
+                        val: v
+                    })
+                });
+                
+                if(response.ok) {
+                    console.log("Data berhasil masuk ke Spreadsheet");
+                    document.getElementById('log-value').value = '';
+                    init(); // Refresh tampilan tabel
+                }
+            } catch (error) {
+                console.error("Gagal konek ke Spreadsheet:", error);
+                alert("Tersimpan lokal, tapi gagal sinkron ke Spreadsheet.");
+            }
+        }
+       /** function submitLog() {
             const a = document.getElementById('log-activity').value, v = parseFloat(document.getElementById('log-value').value);
             if(!a || isNaN(v)) return;
             const l = getLogs(), today = new Date().toISOString().split('T')[0];
@@ -421,6 +465,7 @@
             l[today].push({ act: a, val: v, time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
             saveLogs(l); document.getElementById('log-value').value = '';
         }
+        **/
         function renderMaster() {
             document.getElementById('master-list').innerHTML = getMaster().map(m => `<div class="flex justify-between p-3 bg-slate-50 rounded-xl border text-xs font-bold"><span>${m.name} (${m.unit})</span> <button onclick="saveMaster(getMaster().filter(x=>x.id!==${m.id}))" class="text-rose-400 font-bold">✕</button></div>`).join('');
         }
@@ -436,3 +481,4 @@
     </script>
 </body>
 </html>
+
